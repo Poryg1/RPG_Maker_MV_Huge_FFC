@@ -21,6 +21,8 @@
  * Sharing the plugin or its edits requires written permission and proper
  * credit. I'm not trying to be restrictive, I just want to see where
  * my plugins are.
+ * For full official terms of use see  
+ * https://github.com/Poryg1/RPG_Maker_MV_Huge_FFC
  *
  * The plugin contains only two plugin commands:
  * setsavebgm name pitch pan volume
