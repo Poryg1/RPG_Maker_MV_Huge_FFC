@@ -33,6 +33,11 @@
  * If you need to call a load scene via event script, use
  * SceneManager.push(Scene_Load)
  *
+ * Plugin now supports YEP_X_NewGamePlus plugin. However, it doesn't support
+ * it natively. You have to edit YEP_X_NewGamePlus and delete the entire
+ * Window_SaveAction section. Also, make sure this plugin is ABOVE
+ * YEP_X_NewGamePlus or else it will NOT function correctly!!!
+ *
  * ////////////////////////////////////////////////////////////////////////////
  * //Plugin parameters
  * ////////////////////////////////////////////////////////////////////////////
