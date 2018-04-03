@@ -1,5 +1,5 @@
 /*:
- * @plugindesc V1.0 Save core.
+ * @plugindesc V1.1 Save core.
  * @author Poryg
  *
  * @help
@@ -171,6 +171,23 @@
  * not necessary
  * bottom - the bottom of a rect
  *
+ * Other:
+ * If you want to choose different X for file index compared to Empty
+ * slot, use valid ? rect.width - 80 : rect.width / 2
+ * of course substitute 80 and / 2 by whatever you want
+ * If you want to choose different X for file index compared to New game+
+ * index, use 
+ * DataManager.loadSavefileInfo(id).newGamePlus ? 80 : 150
+ * (if it's new game+, X is 80 pixels, if not, it's 150 pixels.)
+ *
+ *
+ * ////////////////////////////////////////////////////////////////////////////
+ * //Changelog:
+ * ////////////////////////////////////////////////////////////////////////////
+ * 1.1 - 3th April 2018
+ * -- Default MV encryption is now supported
+ * -- Added compatibility with Yanfly's save core
+ *
  * @param sys
  * @text Basic data
  *
@@ -212,6 +229,12 @@
  * @text _Index Y
  * @desc Sets the Y position of the File index text
  * @default 0
+ *
+ * @param newGamePlusIndex
+ * @parent swCont
+ * @text New game+ text 
+ * @desc Sets the text of a New game+ slot.
+ * @default New game+ 
  *
  * @param showSave
  * @parent swCont
@@ -257,6 +280,12 @@
  * @text Load game text
  * @desc Sets how will the Load game command look (default: Load game)
  * @default Load game
+ *
+ * @param newGamePlusText
+ * @parent swCont
+ * @text New game + text
+ * @desc Sets how will the New game+ command look (requires YEP_NewGamePlus plugin)
+ * @default New game +
  *
  * @param deleteGameText
  * @parent swCont
@@ -1054,6 +1083,10 @@
  *
  */
 
+var Imported = Imported || {};
+Imported.POR_SaveCoreMin = true;
+Imported.YEP_SaveCore = "Not really, but NewGamePlus requires this plugin."
+
 ////////////////////////////////////////////////////////////////////////
 //PORParams
 ////////////////////////////////////////////////////////////////////////
@@ -1066,6 +1099,7 @@ PORParams.saveCoreMin.maxSaves = Number(PORParameters.maxSaves);
 PORParams.saveCoreMin.savemenuBGMVariable = Number(PORParameters.savemenuBGMVariable);
 PORParams.saveCoreMin.indexX = PORParameters.indexX;
 PORParams.saveCoreMin.indexY = PORParameters.indexY;
+PORParams.saveCoreMin.newGamePlusIndex = PORParameters.newGamePlusIndex;
 PORParams.saveCoreMin.showSave = eval(PORParameters.showSave);
 PORParams.saveCoreMin.emptyId = eval(PORParameters.emptyId);
 PORParams.saveCoreMin.slotId = eval(PORParameters.slotId);
@@ -1073,6 +1107,7 @@ PORParams.saveCoreMin.emptySaveName = PORParameters.emptySaveName;
 PORParams.saveCoreMin.newGameText = PORParameters.newGameText;
 PORParams.saveCoreMin.saveGameText = PORParameters.saveGameText;
 PORParams.saveCoreMin.loadGameText = PORParameters.loadGameText;
+PORParams.saveCoreMin.newGamePlusText = PORParameters.newGamePlusText;
 PORParams.saveCoreMin.deleteGameText = PORParameters.deleteGameText;
 PORParams.saveCoreMin.backText = PORParameters.backText;
 PORParams.saveCoreMin.partyShow = Number(PORParameters.partyShow);
@@ -1312,6 +1347,7 @@ Scene_File.prototype.createOptionsWindow = function () {
     this._optionsWindow.y = eval(PORParams.saveCoreMin.owY);
     if (SceneManager._stack[0] == Scene_Map) this._optionsWindow.setHandler ('save', this.onSave.bind (this));
     this._optionsWindow.setHandler ('load', this.onOptionLoad.bind (this));
+    this._optionsWindow.setHandler ('newGamePlus', this.onOptionLoad.bind(this));
     this._optionsWindow.setHandler ('delete', this.onOptionDelete.bind (this));
     this._optionsWindow.setHandler ('newGame', this.onNewgame.bind (this));
     this._optionsWindow.setHandler ('back', this.activateListWindow.bind (this));
@@ -1393,14 +1429,23 @@ Scene_File.prototype.onSave = function () {
 };
 
 Scene_File.prototype.onOptionLoad = function () {
-    if (DataManager.loadGame(this.savefileId())) {
-        this.fadeOutAll();
-        if ($gameSystem.versionId() !== $dataSystem.versionId) {
-            $gamePlayer.reserveTransfer($gameMap.mapId(), $gamePlayer.x, $gamePlayer.y);
-            $gamePlayer.requestMapReload();
-        }
-        SceneManager.goto(Scene_Map);
-        $gameSystem.onAfterLoad();
+	var id = this.savefileId();
+    if (DataManager.loadGame(id)) {
+    	if (DataManager.loadSavefileInfo(id).newGamePlus) {
+    		try {
+    			this.startNewGamePlus();
+    		}catch (e){
+    			throw new Error("Yanfly's New game+ not present.")
+    		};
+    	}else {
+    		SceneManager._scene.fadeOutAll();
+	        if ($gameSystem.versionId() !== $dataSystem.versionId) {
+	            $gamePlayer.reserveTransfer($gameMap.mapId(), $gamePlayer.x, $gamePlayer.y);
+	            $gamePlayer.requestMapReload();
+	        }
+	        SceneManager.goto(Scene_Map);
+	        $gameSystem.onAfterLoad();
+    	}
     } else {
         this.onLoadFailure();
     }
@@ -1491,7 +1536,8 @@ Window_SavefileList.prototype.drawItem = function(index) {
 
 Window_SavefileList.prototype.drawFileId = function(id, x, y, valid) {
     if (valid) {
-        this.drawText(TextManager.file + (PORParams.saveCoreMin.slotId ? id : ""), x, y, 180);
+        if (!DataManager.loadSavefileInfo(id).newGamePlus) this.drawText(TextManager.file + (PORParams.saveCoreMin.slotId ? id : ""), x, y, 180);
+    	else this.drawText(PORParams.saveCoreMin.newGamePlusIndex + (PORParams.saveCoreMin.slotId ? id : ""), x, y, 180);
     }else {
         this.drawText (PORParams.saveCoreMin.emptySaveName + (PORParams.saveCoreMin.emptyId ? id : ""), x, y, 180);
     }
@@ -1561,9 +1607,18 @@ Window_SavefileList.prototype.clearFaces = function (index) {
 };
 
 Window_SavefileList.prototype.drawFace = function(saveSlotIndex, i, faceName, faceIndex) {
-    var bitmap = PIXI.Texture.fromImage ("img/faces/" + faceName + ".png");
-    this._faceSprites[saveSlotIndex][i].texture = new PIXI.Texture (bitmap, new Rectangle(144 * (faceIndex % 4), 144 * Math.floor(faceIndex / 4), 144, 144))
-    this._faceSprites[saveSlotIndex][i].renderable = true;
+	if (!Decrypter.hasEncryptedImages) {
+		var bitmap = PIXI.Texture.fromImage ("img/faces/" + faceName + ".png");
+	    this._faceSprites[saveSlotIndex][i].texture = new PIXI.Texture (bitmap, new Rectangle(144 * (faceIndex % 4), 144 * Math.floor(faceIndex / 4), 144, 144))
+	    this._faceSprites[saveSlotIndex][i].renderable = true;
+	}else {
+		//Necessary to handle it like this due to MV encryption and messed up loading
+		var bitmap = Bitmap.load("img/faces/" + faceName + ".rpgmvp");
+		this._faceSprites[saveSlotIndex][i]._bitmap = bitmap;
+		this._faceSprites[saveSlotIndex][i]._texture.baseTexture = this._faceSprites[saveSlotIndex][i]._bitmap._baseTexture;
+		this._faceSprites[saveSlotIndex][i].setFrame(new Rectangle(144 * (faceIndex % 4), 144 * Math.floor(faceIndex / 4), 144, 144))
+		this._faceSprites[saveSlotIndex][i].renderable = true;
+	}
 };
 
 Window_SavefileList.prototype.drawPlaytime = function(info, x, y) {
@@ -1687,7 +1742,10 @@ Window_SavefileOptions.prototype.initialize = function(x, y, width, height) {
 
 Window_SavefileOptions.prototype.makeCommandList = function () {
     if (SceneManager._stack[0] == Scene_Map && PORParams.saveCoreMin.showSave) this.addCommand (PORParams.saveCoreMin.saveGameText, 'save', $gameSystem.isSaveEnabled());
-    this.addCommand (PORParams.saveCoreMin.loadGameText, 'load');
+    var id = SceneManager._scene.savefileId();
+    var info = DataManager.loadSavefileInfo(id);
+    if (!info.newGamePlus) this.addCommand (PORParams.saveCoreMin.loadGameText, 'load');
+    else this.addCommand (PORParams.saveCoreMin.newGamePlusText, 'newGamePlus');
     this.addCommand (PORParams.saveCoreMin.deleteGameText, 'delete');
     if (PORParams.saveCoreMin.newGame == 2) this.addCommand (PORParams.saveCoreMin.newGameText, 'newGame');
     this.addCommand (PORParams.saveCoreMin.backText, 'back');

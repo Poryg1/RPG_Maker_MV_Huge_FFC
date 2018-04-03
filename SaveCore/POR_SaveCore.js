@@ -1,5 +1,5 @@
 /*:
- * @plugindesc V1.0 Save core.
+ * @plugindesc V1.1 Save core.
  * @author Poryg
  *
  * @help
@@ -169,6 +169,23 @@
  * not necessary
  * bottom - the bottom of a rect
  *
+ * Other:
+ * If you want to choose different X for file index compared to Empty
+ * slot, use valid ? rect.width - 80 : rect.width / 2
+ * of course substitute 80 and / 2 by whatever you want
+ * If you want to choose different X for file index compared to New game+
+ * index, use 
+ * DataManager.loadSavefileInfo(id).newGamePlus ? 80 : 150
+ * (if it's new game+, X is 80 pixels, if not, it's 150 pixels.)
+ *
+ *
+ * ////////////////////////////////////////////////////////////////////////////
+ * //Changelog:
+ * ////////////////////////////////////////////////////////////////////////////
+ * 1.1 - 3th April 2018
+ * -- Default MV encryption is now supported
+ * -- Added compatibility with Yanfly's save core
+ *
  * @param sys
  * @text Basic data
  *
@@ -218,6 +235,12 @@
  * @desc Sets the Y position of the File index text
  * @default 0
  *
+ * @param newGamePlusIndex
+ * @parent swCont
+ * @text New game+ text 
+ * @desc Sets the text of a New game+ slot.
+ * @default New game+ 
+ *
  * @param showSave
  * @parent swCont
  * @text Show save button
@@ -262,6 +285,12 @@
  * @text Load game text
  * @desc Sets how will the Load game command look (default: Load game)
  * @default Load game
+ *
+ * @param newGamePlusText
+ * @parent swCont
+ * @text New game + text
+ * @desc Sets how will the New game+ command look (requires YEP_NewGamePlus plugin)
+ * @default New game +
  *
  * @param deleteGameText
  * @parent swCont
@@ -1985,6 +2014,9 @@
  * @default 255
  */
 
+var Imported = Imported || {};
+Imported.POR_SaveCore = true;
+Imported.YEP_SaveCore = "Not really, but NewGamePlus requires this plugin."
 
 ////////////////////////////////////////////////////////////////////////
 //PORParams
@@ -1999,6 +2031,7 @@ PORParams.saveCore.savemenuBGMVariable = Number(PORParameters.savemenuBGMVariabl
 PORParams.saveCore.recacheImages = Number(PORParameters.recacheImages);
 PORParams.saveCore.indexX = PORParameters.indexX;
 PORParams.saveCore.indexY = PORParameters.indexY;
+PORParams.saveCore.newGamePlusIndex = PORParameters.newGamePlusIndex;
 PORParams.saveCore.showSave = eval(PORParameters.showSave);
 PORParams.saveCore.emptyId = eval(PORParameters.emptyId);
 PORParams.saveCore.slotId = eval(PORParameters.slotId);
@@ -2006,6 +2039,7 @@ PORParams.saveCore.emptySaveName = PORParameters.emptySaveName;
 PORParams.saveCore.newGameText = PORParameters.newGameText;
 PORParams.saveCore.saveGameText = PORParameters.saveGameText;
 PORParams.saveCore.loadGameText = PORParameters.loadGameText;
+PORParams.saveCore.newGamePlusText = PORParameters.newGamePlusText;
 PORParams.saveCore.deleteGameText = PORParameters.deleteGameText;
 PORParams.saveCore.backText = PORParameters.backText;
 PORParams.saveCore.partyShow = Number(PORParameters.partyShow);
@@ -2229,8 +2263,13 @@ Scene_Map.prototype.recacheMenuTextures = function () {
     var por = PORParams.saveCore;
     if (this._menuImageChecker >= por.recacheImages) {
         this._menuImageChecker = 0;
-        for (var i in por.bgs) if (por.bgs[i].alwaysLoaded) var tex = PIXI.Texture.fromImage("img/pictures/" + PORParams.saveCore.bgs[i].Filename + ".png");
-        for (var i in por.fgs) if (por.fgs[i].alwaysLoaded) var tex = PIXI.Texture.fromImage("img/pictures/" + PORParams.saveCore.fgs[i].Filename + ".png");
+        if (!Decrypter.hasEncryptedImages) {
+	        for (var i in por.bgs) if (por.bgs[i].alwaysLoaded) var tex = PIXI.Texture.fromImage("img/pictures/" + PORParams.saveCore.bgs[i].Filename + ".png");
+    	    for (var i in por.fgs) if (por.fgs[i].alwaysLoaded) var tex = PIXI.Texture.fromImage("img/pictures/" + PORParams.saveCore.fgs[i].Filename + ".png");
+    	}else {
+    		for (var i in por.bgs) if (por.bgs[i].alwaysLoaded) var tex = Bitmap.load("img/pictures/" + PORParams.saveCore.bgs[i].Filename + ".rpgmvp");
+    		for (var i in por.fgs) if (por.fgs[i].alwaysLoaded) var tex = Bitmap.load("img/pictures/" + PORParams.saveCore.fgs[i].Filename + ".rpgmvp");
+    	}
     }else {
         this._menuImageChecker ? this._menuImageChecker++ : this._menuImageChecker = 1;
     };
@@ -2271,7 +2310,8 @@ Scene_File.prototype.create = function() {
 
 //Creating images via PIXI, because it's significantly faster than default Javascript loading.
 Scene_File.prototype.createBackgroundImages = function () {
-    this._backgroundBase = PIXI.Sprite.fromImage ("img/pictures/" + PORParams.saveCore.bgs[0].Filename + ".png");
+	if (!Decrypter.hasEncryptedImages) this._backgroundBase = PIXI.Sprite.fromImage ("img/pictures/" + PORParams.saveCore.bgs[0].Filename + ".png");
+    else this._backgroundBase = new Sprite (Bitmap.load("img/pictures/" + PORParams.saveCore.bgs[0].Filename + ".rpgmvp"));
     if (eval(PORParams.saveCore.bgs[0].width) !== 0) this._backgroundBase.width = eval(PORParams.saveCore.bgs[0].width);
     if (eval(PORParams.saveCore.bgs[0].height) !== 0) this._backgroundBase.height = eval(PORParams.saveCore.bgs[0].height);
     if (eval(PORParams.saveCore.bgs[0].x) !== 0) this._backgroundBase.x = eval(PORParams.saveCore.bgs[0].x);
@@ -2282,7 +2322,8 @@ Scene_File.prototype.createBackgroundImages = function () {
     if (!PORParams.saveCore.bgs[1]) return;
     this._backgroundBase.cacheAsBitmap = PORParams.saveCore.bgCache;
     for (var i = 1; i < PORParams.saveCore.bgs.length; i++) {
-        var img = PIXI.Sprite.fromImage ("img/pictures/" + PORParams.saveCore.bgs[i].Filename + ".png");
+        if (!Decrypter.hasEncryptedImages) var img = PIXI.Sprite.fromImage ("img/pictures/" + PORParams.saveCore.bgs[i].Filename + ".png");
+        else var img = new Sprite (Bitmap.load("img/pictures/" + PORParams.saveCore.bgs[i].Filename + ".png"));
         if (eval(PORParams.saveCore.bgs[i].width) !== 0) img.width = eval(PORParams.saveCore.bgs[i].width);
         if (eval(PORParams.saveCore.bgs[i].height) !== 0) img.height = eval(PORParams.saveCore.bgs[i].height);
         if (eval(PORParams.saveCore.bgs[i].x) !== 0) img.x = eval(PORParams.saveCore.bgs[i].x);
@@ -2294,7 +2335,8 @@ Scene_File.prototype.createBackgroundImages = function () {
 };
 
 Scene_File.prototype.createForegroundImages = function () {
-    this._foregroundBase = PIXI.Sprite.fromImage ("img/pictures/" + PORParams.saveCore.fgs[0].Filename + ".png");
+    if (!Decrypter.hasEncryptedImages) this._foregroundBase = PIXI.Sprite.fromImage ("img/pictures/" + PORParams.saveCore.fgs[0].Filename + ".png");
+    else this._foregroundBase = new Sprite (Bitmap.load("img/pictures/" + PORParams.saveCore.fgs[0].Filename + ".rpgmvp"));
     if (eval(PORParams.saveCore.fgs[0].width) !== 0) this._foregroundBase.width = eval(PORParams.saveCore.fgs[0].width);
     if (eval(PORParams.saveCore.fgs[0].height) !== 0) this._foregroundBase.height = eval(PORParams.saveCore.fgs[0].height);
     if (eval(PORParams.saveCore.fgs[0].x) !== 0) this._foregroundBase.x = eval(PORParams.saveCore.fgs[0].x);
@@ -2305,7 +2347,8 @@ Scene_File.prototype.createForegroundImages = function () {
     if (!PORParams.saveCore.fgs[1]) return;
     this._foregroundBase.cacheAsBitmap = PORParams.saveCore.fgCache;
     for (var i = 1; i < PORParams.saveCore.fgs.length; i++) {
-        var img = PIXI.Sprite.fromImage ("img/pictures/" + PORParams.saveCore.fgs[i].Filename + ".png");
+        if (!Decrypter.hasEncryptedImages) var img = PIXI.Sprite.fromImage ("img/pictures/" + PORParams.saveCore.fgs[i].Filename + ".png");
+        else var img = new Sprite (Bitmap.load("img/pictures/" + PORParams.saveCore.fgs[i].Filename + ".rpgmvp"));
         if (eval(PORParams.saveCore.fgs[i].width) !== 0) img.width = eval(PORParams.saveCore.fgs[i].width);
         if (eval(PORParams.saveCore.fgs[i].height) !== 0) img.height = eval(PORParams.saveCore.fgs[i].height);
         if (eval(PORParams.saveCore.fgs[i].x) !== 0) img.x = eval(PORParams.saveCore.fgs[i].x);
@@ -2348,6 +2391,7 @@ Scene_File.prototype.createOptionsWindow = function () {
     this._optionsWindow.y = eval(PORParams.saveCore.owY);
     if (SceneManager._stack[0] == Scene_Map) this._optionsWindow.setHandler ('save', this.onSave.bind (this));
     this._optionsWindow.setHandler ('load', this.onOptionLoad.bind (this));
+    this._optionsWindow.setHandler ('newGamePlus', this.onOptionLoad.bind(this));
     this._optionsWindow.setHandler ('delete', this.onOptionDelete.bind (this));
     this._optionsWindow.setHandler ('newGame', this.onNewgame.bind (this));
     this._optionsWindow.setHandler ('back', this.activateListWindow.bind (this));
@@ -2356,6 +2400,7 @@ Scene_File.prototype.createOptionsWindow = function () {
     this._optionsWindow.refresh();
     this.addWindow(this._optionsWindow);
 };
+
 
 Scene_File.prototype.createNewgameWindow = function () {
     var width = eval(PORParams.saveCore.ngwWidth);
@@ -2429,14 +2474,23 @@ Scene_File.prototype.onSave = function () {
 };
 
 Scene_File.prototype.onOptionLoad = function () {
-    if (DataManager.loadGame(this.savefileId())) {
-        this.fadeOutAll();
-        if ($gameSystem.versionId() !== $dataSystem.versionId) {
-            $gamePlayer.reserveTransfer($gameMap.mapId(), $gamePlayer.x, $gamePlayer.y);
-            $gamePlayer.requestMapReload();
-        }
-        SceneManager.goto(Scene_Map);
-        $gameSystem.onAfterLoad();
+	var id = this.savefileId();
+    if (DataManager.loadGame(id)) {
+    	if (DataManager.loadSavefileInfo(id).newGamePlus) {
+    		try {
+    			this.startNewGamePlus();
+    		}catch (e){
+    			throw new Error("Yanfly's New game+ not present.")
+    		};
+    	}else {
+    		SceneManager._scene.fadeOutAll();
+	        if ($gameSystem.versionId() !== $dataSystem.versionId) {
+	            $gamePlayer.reserveTransfer($gameMap.mapId(), $gamePlayer.x, $gamePlayer.y);
+	            $gamePlayer.requestMapReload();
+	        }
+	        SceneManager.goto(Scene_Map);
+	        $gameSystem.onAfterLoad();
+    	}
     } else {
         this.onLoadFailure();
     }
@@ -2527,7 +2581,8 @@ Window_SavefileList.prototype.drawItem = function(index) {
 
 Window_SavefileList.prototype.drawFileId = function(id, x, y, valid) {
     if (valid) {
-        this.drawText(TextManager.file + (PORParams.saveCore.slotId ? id : ""), x, y, 180);
+        if (!DataManager.loadSavefileInfo(id).newGamePlus) this.drawText(TextManager.file + (PORParams.saveCore.slotId ? id : ""), x, y, 180);
+    	else this.drawText(PORParams.saveCore.newGamePlusIndex + (PORParams.saveCore.slotId ? id : ""), x, y, 180);
     }else {
         this.drawText (PORParams.saveCore.emptySaveName + (PORParams.saveCore.emptyId ? id : ""), x, y, 180);
     }
@@ -2597,9 +2652,18 @@ Window_SavefileList.prototype.clearFaces = function (index) {
 };
 
 Window_SavefileList.prototype.drawFace = function(saveSlotIndex, i, faceName, faceIndex) {
-    var bitmap = PIXI.Texture.fromImage ("img/faces/" + faceName + ".png");
-    this._faceSprites[saveSlotIndex][i].texture = new PIXI.Texture (bitmap, new Rectangle(144 * (faceIndex % 4), 144 * Math.floor(faceIndex / 4), 144, 144))
-    this._faceSprites[saveSlotIndex][i].renderable = true;
+	if (!Decrypter.hasEncryptedImages) {
+		var bitmap = PIXI.Texture.fromImage ("img/faces/" + faceName + ".png");
+	    this._faceSprites[saveSlotIndex][i].texture = new PIXI.Texture (bitmap, new Rectangle(144 * (faceIndex % 4), 144 * Math.floor(faceIndex / 4), 144, 144))
+	    this._faceSprites[saveSlotIndex][i].renderable = true;
+	}else {
+		//Necessary to handle it like this due to MV encryption loading
+		var bitmap = Bitmap.load("img/faces/" + faceName + ".rpgmvp");
+		this._faceSprites[saveSlotIndex][i]._bitmap = bitmap;
+		this._faceSprites[saveSlotIndex][i]._texture.baseTexture = this._faceSprites[saveSlotIndex][i]._bitmap._baseTexture;
+		this._faceSprites[saveSlotIndex][i].setFrame(new Rectangle(144 * (faceIndex % 4), 144 * Math.floor(faceIndex / 4), 144, 144))
+		this._faceSprites[saveSlotIndex][i].renderable = true;
+	}
 };
 
 Window_SavefileList.prototype.drawPlaytime = function(info, x, y) {
@@ -2723,7 +2787,10 @@ Window_SavefileOptions.prototype.initialize = function(x, y, width, height) {
 
 Window_SavefileOptions.prototype.makeCommandList = function () {
     if (SceneManager._stack[0] == Scene_Map && PORParams.saveCore.showSave) this.addCommand (PORParams.saveCore.saveGameText, 'save', $gameSystem.isSaveEnabled());
-    this.addCommand (PORParams.saveCore.loadGameText, 'load');
+    var id = SceneManager._scene.savefileId();
+    var info = DataManager.loadSavefileInfo(id);
+    if (!info.newGamePlus) this.addCommand (PORParams.saveCore.loadGameText, 'load');
+    else this.addCommand (PORParams.saveCore.newGamePlusText, 'newGamePlus');
     this.addCommand (PORParams.saveCore.deleteGameText, 'delete');
     if (PORParams.saveCore.newGame == 2) this.addCommand (PORParams.saveCore.newGameText, 'newGame');
     this.addCommand (PORParams.saveCore.backText, 'back');
