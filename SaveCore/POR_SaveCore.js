@@ -2794,8 +2794,10 @@ Window_SavefileOptions.prototype.makeCommandList = function () {
     if (SceneManager._stack[0] == Scene_Map && PORParams.saveCore.showSave) this.addCommand (PORParams.saveCore.saveGameText, 'save', $gameSystem.isSaveEnabled());
     var id = SceneManager._scene.savefileId();
     var info = DataManager.loadSavefileInfo(id);
-    if (!info.newGamePlus) this.addCommand (PORParams.saveCore.loadGameText, 'load');
-    else this.addCommand (PORParams.saveCore.newGamePlusText, 'newGamePlus');
+    if (info) {
+    	if (!info.newGamePlus) this.addCommand (PORParams.saveCore.loadGameText, 'load');
+    	else this.addCommand (PORParams.saveCore.newGamePlusText, 'newGamePlus');
+    };
     this.addCommand (PORParams.saveCore.deleteGameText, 'delete');
     if (PORParams.saveCore.newGame == 2) this.addCommand (PORParams.saveCore.newGameText, 'newGame');
     this.addCommand (PORParams.saveCore.backText, 'back');
