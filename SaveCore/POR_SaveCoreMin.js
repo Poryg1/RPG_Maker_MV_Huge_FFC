@@ -189,7 +189,9 @@
  * ////////////////////////////////////////////////////////////////////////////
  * //Changelog:
  * ////////////////////////////////////////////////////////////////////////////
- * 1.1 - 3th April 2018
+ * 1.1.1 - 13th May 2018
+ * -- Fixed a bug of x,y positions in custom save data, they were badly written
+ * 1.1 - 3rd April 2018
  * -- Default MV encryption is now supported
  * -- Added compatibility with Yanfly's save core
  *
@@ -1655,7 +1657,7 @@ Window_SavefileList.prototype.drawPartyEquips = function (info, x, y) {
 Window_SavefileList.prototype.drawCustomTexts = function (info, rect) {
     if (info.customSaveData) {
         var por = PORParams.saveCoreMin.customSaveData[1];
-        for (var i in info.customSaveData[0]) if (info.customSaveData[1][i]) this.drawTextEx(info.customSaveData[0][i], rect.x + eval(por[i][1]), rect.y + eval(por[i][2]));
+        for (var i in info.customSaveData[0]) if (info.customSaveData[1][i]) this.drawTextEx(info.customSaveData[0][i], rect.x + eval(por[1][i][0]), rect.y + eval(por[1][i][1]));
     };
 };
 
@@ -1664,7 +1666,7 @@ Window_SavefileList.prototype.drawDescriptionTexts = function(info, rect) {
     this.drawTextEx(PORParams.saveCoreMin.peText, rect.x + eval(PORParams.saveCoreMin.peTextX), rect.y + eval(PORParams.saveCoreMin.peTextY));
     if (info.customSaveData) {
         var por = PORParams.saveCoreMin.customSaveData[0];
-        for (var i in por) if (info.customSaveData[2][i]) this.drawTextEx(por[i][0], rect.x + eval(por[i][1]), rect.y + eval(por[i][2]));
+        for (var i in por) if (info.customSaveData[2][i]) this.drawTextEx(por[0][i], rect.x + eval(por[1][i][0]), rect.y + eval(por[1][i][1]));
     }
 };
 
