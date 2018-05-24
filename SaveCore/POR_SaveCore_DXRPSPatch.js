@@ -5,8 +5,24 @@
  * @help
  * Compatibility patch for DreamX's random prefixes and suffixes.
  * Correct order: POR_SaveCore - this patch - Random p&s
+ * credits: Poryg, DreamX
  */
-Window_SavefileList.prototype.drawIcon = function (iconIndex, x, y) {
+ 
+Window_SavefileList.prototype.drawPartyEquips = function (info, x, y) {
+    if (info.partyEquips) {
+        for (var i in info.partyEquips) {
+            for (var j in info.partyEquips[i]) {
+                var ix = x + (Math.floor(j / PORParams.saveCoreMin.peRows) * 32 + PORParams.saveCoreMin.pePadding);
+                var iy = y + (Math.floor(j % PORParams.saveCoreMin.peRows) * 32 + PORParams.saveCoreMin.pePadding);
+                if (PORParams.saveCoreMin.partyHorz) ix += PORParams.saveCoreMin.partySpread * i;
+                else iy += PORParams.saveCoreMin.partySpread * i;
+                this.drawIcon(info, info.partyEquips[i][j], ix, iy);
+            };
+        };
+    };
+};
+
+Window_SavefileList.prototype.drawIcon = function (info, iconIndex, x, y) {
 	      var paramCombIconStarting = PluginManager.parameters('DreamX_RandomPrefixesSuffixes')['Icon Combination Starting Index'] || 6000;
         if (iconIndex >= paramCombIconStarting) {
             var overlayArrayIndex = iconIndex - paramCombIconStarting;
