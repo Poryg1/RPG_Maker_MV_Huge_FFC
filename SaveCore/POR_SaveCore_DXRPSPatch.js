@@ -7,15 +7,16 @@
  * Correct order: POR_SaveCore - this patch - Random p&s
  * credits: Poryg, DreamX
  */
- 
+
 Window_SavefileList.prototype.drawPartyEquips = function (info, x, y) {
+    var params = PORParams.saveCore || PORParams.saveCoreMin;
     if (info.partyEquips) {
         for (var i in info.partyEquips) {
             for (var j in info.partyEquips[i]) {
-                var ix = x + (Math.floor(j / PORParams.saveCoreMin.peRows) * 32 + PORParams.saveCoreMin.pePadding);
-                var iy = y + (Math.floor(j % PORParams.saveCoreMin.peRows) * 32 + PORParams.saveCoreMin.pePadding);
-                if (PORParams.saveCoreMin.partyHorz) ix += PORParams.saveCoreMin.partySpread * i;
-                else iy += PORParams.saveCoreMin.partySpread * i;
+                var ix = x + (Math.floor(j / params.peRows) * 32 + params.pePadding);
+                var iy = y + (Math.floor(j % params.peRows) * 32 + params.pePadding);
+                if (params.partyHorz) ix += params.partySpread * i;
+                else iy += params.partySpread * i;
                 this.drawIcon(info, info.partyEquips[i][j], ix, iy);
             };
         };
