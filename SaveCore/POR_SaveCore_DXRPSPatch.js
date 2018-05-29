@@ -40,6 +40,7 @@ Window_SavefileList.prototype.drawIcon = function (info, iconIndex, x, y) {
 DataManager.makeSavefileInfo = function() {
     var info = {};
     info.globalId   = this._globalId;
+    info.title      = $dataSystem.gameTitle;
     info.characters = $gameParty.charactersForSavefile();
     info.faces      = $gameParty.facesForSavefile();
     info.playtime   = $gameSystem.playtimeText();
