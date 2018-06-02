@@ -2332,7 +2332,7 @@ Scene_File.prototype.createBackgroundImages = function () {
     this._backgroundBase.cacheAsBitmap = PORParams.saveCore.bgCache;
     for (var i = 1; i < PORParams.saveCore.bgs.length; i++) {
         if (!Decrypter.hasEncryptedImages) var img = PIXI.Sprite.fromImage ("img/pictures/" + PORParams.saveCore.bgs[i].Filename + ".png");
-        else var img = new Sprite (Bitmap.load("img/pictures/" + PORParams.saveCore.bgs[i].Filename + ".png"));
+        else var img = new Sprite (Bitmap.load("img/pictures/" + PORParams.saveCore.bgs[i].Filename + ".rpgmvp"));
         if (eval(PORParams.saveCore.bgs[i].width) !== 0) img.width = eval(PORParams.saveCore.bgs[i].width);
         if (eval(PORParams.saveCore.bgs[i].height) !== 0) img.height = eval(PORParams.saveCore.bgs[i].height);
         if (eval(PORParams.saveCore.bgs[i].x) !== 0) img.x = eval(PORParams.saveCore.bgs[i].x);
