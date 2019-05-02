@@ -1099,13 +1099,6 @@
  *
  * @param bg
  * @text Background images
- *
- * @param bgCache
- * @parent bg
- * @text Cache as bitmap
- * @type boolean
- * @desc Cache as bitmap means all backgrounds are handled like one picture.
- * @default true
  * 
  * @param bg1
  * @text Background 1
@@ -1378,13 +1371,6 @@
  * @param fg
  * @text Foreground images
  *
- * @param fgCache
- * @parent fg
- * @text Cache as bitmap
- * @type boolean
- * @desc Cache as bitmap means all foregrounds are handled like one picture.
- * @default true
- * 
  * @param fg1
  * @parent fg
  * @text Foreground 1
@@ -2112,7 +2098,6 @@ for (var i = 1; i < 999999999; i++) {
     var text = [PORParameters["ct" + i + "X"] || 0, PORParameters["ct" + i + "Y"] || 0, PORParameters["ct" + i + "ac"] || false];
     PORParams.saveCore.customSaveData[1][1].push(text);
 };
-PORParams.saveCore.bgCache = eval(PORParameters.bgCache);
 PORParams.saveCore.bgs = [];
 for (var i = 1; i < 999999999; i++) {
     if (typeof PORParameters["bg" + i] == "undefined") break;
@@ -2129,7 +2114,6 @@ for (var i = 1; i < 999999999; i++) {
         PORParams.saveCore.bgs.push(bg);
     }; 
 };
-PORParams.saveCore.fgCache = eval(PORParameters.fgCache);
 PORParams.saveCore.fgs = [];
 for (var i = 1; i < 999999999; i++) {
     if (typeof PORParameters["fg" + i] == "undefined") break;
@@ -2312,7 +2296,7 @@ Scene_File.prototype.create = function() {
     DataManager.loadAllSavefileImages();
     this.createListWindow();
     this.createOptionsWindow();
-    if (PORParams.saveCore.newGame) this.createNewgameWindow();
+    this.createNewgameWindow();
     if (PORParams.saveCore.bgs.length) this.createBackgroundImages();
     if (PORParams.saveCore.fgs.length) this.createForegroundImages();
 };
@@ -2329,7 +2313,6 @@ Scene_File.prototype.createBackgroundImages = function () {
     this._backgroundBase.alpha = PORParams.saveCore.bgs[0].alpha;
     this._backgroundSprite.addChild(this._backgroundBase)
     if (!PORParams.saveCore.bgs[1]) return;
-    this._backgroundBase.cacheAsBitmap = PORParams.saveCore.bgCache;
     for (var i = 1; i < PORParams.saveCore.bgs.length; i++) {
         if (!Decrypter.hasEncryptedImages) var img = PIXI.Sprite.fromImage ("img/pictures/" + PORParams.saveCore.bgs[i].Filename + ".png");
         else var img = new Sprite (Bitmap.load("img/pictures/" + PORParams.saveCore.bgs[i].Filename + ".rpgmvp"));
@@ -2354,7 +2337,6 @@ Scene_File.prototype.createForegroundImages = function () {
     this._foregroundBase.alpha = PORParams.saveCore.fgs[0].alpha;
     this.addChild(this._foregroundBase)
     if (!PORParams.saveCore.fgs[1]) return;
-    this._foregroundBase.cacheAsBitmap = PORParams.saveCore.fgCache;
     for (var i = 1; i < PORParams.saveCore.fgs.length; i++) {
         if (!Decrypter.hasEncryptedImages) var img = PIXI.Sprite.fromImage ("img/pictures/" + PORParams.saveCore.fgs[i].Filename + ".png");
         else var img = new Sprite (Bitmap.load("img/pictures/" + PORParams.saveCore.fgs[i].Filename + ".rpgmvp"));

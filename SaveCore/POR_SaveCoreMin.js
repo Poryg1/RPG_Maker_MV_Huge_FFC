@@ -1320,7 +1320,7 @@ Scene_File.prototype.create = function() {
     DataManager.loadAllSavefileImages();
     this.createListWindow();
     this.createOptionsWindow();
-    if (PORParams.saveCoreMin.newGame) this.createNewgameWindow();
+    this.createNewgameWindow();
 };
 
 
