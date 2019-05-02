@@ -1,5 +1,5 @@
 /*:
- * @plugindesc V1.1 Save core.
+ * @plugindesc V1.2 Save core.
  * @author Poryg
  *
  * @help
@@ -187,6 +187,10 @@
  * ////////////////////////////////////////////////////////////////////////////
  * //Changelog:
  * ////////////////////////////////////////////////////////////////////////////
+ * 1.2 2nd May 2019
+ * -- Fixed bug where in new game mode 0 it would crash instead of opening new game window
+ * -- Removed the option to Cache foreground or background as bitmap, since it's slow
+ * 
  * 1.1.1 - 13th May 2018
  * -- Fixed bug in x and y positions in custom save data, they were badly written
  *
